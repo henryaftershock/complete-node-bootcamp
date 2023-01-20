@@ -6,17 +6,14 @@ class APIFeatures {
 
   filter() {
     const queryObj = { ...this.queryString };
-
     const excludedFields = ['page', 'sort', 'limit', 'fields'];
+    excludedFields.forEach(el => delete queryObj[el]);
 
-    excludedFields.forEach((el) => delete queryObj[el]);
-
+    // 1B) Advanced filtering
     let queryStr = JSON.stringify(queryObj);
-    queryStr = queryStr.replace(/\b(gte|gt|lte|lt)\b/g, (match) => `$${match}`);
+    queryStr = queryStr.replace(/\b(gte|gt|lte|lt)\b/g, match => `$${match}`);
 
-    // let query = Tour.find(JSON.parse(queryStr));
-
-    this.query.find(JSON.parse(queryStr));
+    this.query = this.query.find(JSON.parse(queryStr));
 
     return this;
   }
@@ -26,8 +23,9 @@ class APIFeatures {
       const sortBy = this.queryString.sort.split(',').join(' ');
       this.query = this.query.sort(sortBy);
     } else {
-      // query = query.sort('-createdAt');
+      this.query = this.query.sort('-createdAt');
     }
+
     return this;
   }
 
@@ -43,18 +41,13 @@ class APIFeatures {
   }
 
   paginate() {
-    const page = +this.queryString.page || 1;
-    const limit = +this.queryString.limit || 100;
+    const page = this.queryString.page * 1 || 1;
+    const limit = this.queryString.limit * 1 || 100;
     const skip = (page - 1) * limit;
-    this.query = this.query.skip(skip).limit(limit);
 
-    // if (this.queryString.page) {
-    //   const numTours = await Tour.countDocuments();
-    //   if (skip >= numTours) throw new Error('This page does not exist');
-    // }
+    this.query = this.query.skip(skip).limit(limit);
 
     return this;
   }
 }
-
 module.exports = APIFeatures;
