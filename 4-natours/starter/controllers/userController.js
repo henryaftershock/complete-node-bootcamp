@@ -1,63 +1,33 @@
 const fs = require('fs');
-const users = JSON.parse(
-  fs.readFileSync(`${__dirname}/../dev-data/data/users.json`)
-);
+const APIFeatures = require('../utils/apiFeatures');
+const catchAsync = require('../utils/catchAsync');
+const User = require('../models/userModel');
+const AppError = require('../utils/appError');
 
-exports.getAllUsers = (req, res) => {
-  //   console.log('users :>> ', users);
-  res.json({ status: 'success', results: users.length, data: { users } });
-};
+exports.getAllUsers = catchAsync(async (req, res) => {
+  // const features = new APIFeatures(User.find(), req.query);
+  // .filter()
+  // .limitFields()
+  // .paginate()
+  // .sort();
+  const allUsers = await User.find();
+
+  res.json({ status: 'success', results: allUsers.length, data: allUsers });
+});
 
 exports.addUser = (req, res) => {
-  //   console.log(req.body);
-  const newId = users[users.length - 1].id + 1;
-  const newTour = {
-    id: newId,
-    ...req.body,
-  };
-  users.push(newTour);
-
-  fs.writeFile(
-    `${__dirname}/dev-data/data/users.json`,
-    JSON.stringify(users),
-    (err) => {
-      res.status(201).json({
-        status: 'success',
-        data: {
-          tour: newTour,
-        },
-      });
-    }
-  );
-  //   res.send('OK');
+  res.status(201).json({
+    status: 'success',
+  });
 };
 
 exports.getUser = (req, res) => {
-  // console.log('req.params :>> ', req.params);
-  const results = users.filter((item) => item._id === req.params.id);
-
-  if (!results || results.length === 0) {
-    return res.status(404).json({
-      status: 'error',
-      message: 'Invalid ID',
-    });
-  }
-
   res.json({
     status: 'success',
-    results: users.length,
-    data: { users: results },
   });
 };
 
 exports.updateUser = (req, res) => {
-  const tour = users.find((item) => item.id === +req.params.id);
-  if (!tour) {
-    return res.status(404).json({
-      status: 'error',
-      message: 'Invalid ID',
-    });
-  }
   res.json({
     status: 'success',
     message: 'Updated',
@@ -65,15 +35,51 @@ exports.updateUser = (req, res) => {
 };
 
 exports.deleteUser = (req, res) => {
-  const tour = users.find((item) => item.id === +req.params.id);
-  if (!tour) {
-    return res.status(404).json({
-      status: 'error',
-      message: 'Invalid ID',
-    });
-  }
   res.json({
     status: 'success',
     message: 'Deleted',
   });
 };
+
+const filterObj = (obj, allowedFields) => {
+  let filteredObj = {};
+  Object.keys(obj).map((key) => {
+    if (allowedFields.includes(key)) {
+      filteredObj = { ...filteredObj, [key]: obj[key] };
+    }
+  });
+  return filteredObj;
+};
+
+exports.updateMe = catchAsync(async (req, res, next) => {
+  if (req.body.password || req.body.passwordConfirm) {
+    return next(new AppError('You can not update this fields.', 400));
+  }
+
+  // const { name, email } = req.body;
+
+  const filteredObj = filterObj(req.body, ['name', 'email']);
+
+  // console.log('filteredObj :>> ', filteredObj);
+
+  const user = await User.findByIdAndUpdate(req.user.id, filteredObj, {
+    new: true,
+    runValidators: true,
+  });
+
+  res.status(200).json({
+    status: 'success',
+    data: {
+      user,
+    },
+  });
+});
+
+exports.deleteMe = catchAsync(async (req, res, next) => {
+  await User.findByIdAndUpdate(req.user.id, { active: false });
+
+  res.status(200).json({
+    status: 'success',
+    data: null,
+  });
+});
