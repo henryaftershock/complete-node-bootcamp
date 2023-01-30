@@ -1,45 +1,15 @@
-const fs = require('fs');
-const APIFeatures = require('../utils/apiFeatures');
 const catchAsync = require('../utils/catchAsync');
 const User = require('../models/userModel');
 const AppError = require('../utils/appError');
+const factory = require('./handlerFactory');
 
-exports.getAllUsers = catchAsync(async (req, res) => {
-  // const features = new APIFeatures(User.find(), req.query);
-  // .filter()
-  // .limitFields()
-  // .paginate()
-  // .sort();
-  const allUsers = await User.find();
+exports.getAllUsers = factory.getAll(User);
 
-  res.json({ status: 'success', results: allUsers.length, data: allUsers });
-});
+exports.getUser = factory.getOne(User);
 
-exports.addUser = (req, res) => {
-  res.status(201).json({
-    status: 'success',
-  });
-};
+exports.updateUser = factory.updateOne(User);
 
-exports.getUser = (req, res) => {
-  res.json({
-    status: 'success',
-  });
-};
-
-exports.updateUser = (req, res) => {
-  res.json({
-    status: 'success',
-    message: 'Updated',
-  });
-};
-
-exports.deleteUser = (req, res) => {
-  res.json({
-    status: 'success',
-    message: 'Deleted',
-  });
-};
+exports.deleteUser = factory.deleteOne(User);
 
 const filterObj = (obj, allowedFields) => {
   let filteredObj = {};
@@ -50,6 +20,11 @@ const filterObj = (obj, allowedFields) => {
   });
   return filteredObj;
 };
+
+exports.getMe = catchAsync(async (req, res, next) => {
+  req.params.id = req.user.id;
+  next();
+});
 
 exports.updateMe = catchAsync(async (req, res, next) => {
   if (req.body.password || req.body.passwordConfirm) {

@@ -100,15 +100,21 @@ const tourSchema = new mongoose.Schema(
       },
     ],
     guides: [{ type: mongoose.Schema.ObjectId, ref: 'User' }],
+  },
+  {
+    toJSON: { virtuals: ['reviews'] },
+    toObject: { virtuals: ['reviews'] },
   }
-  // {
-  //   toJSON: { virtuals: ['durationWeeks'] },
-  //   toObject: { virtuals: ['durationWeeks'] },
-  // }
 );
 
-tourSchema.virtual('durationWeeks').get(function () {
-  return this.duration / 7;
+// tourSchema.virtual('durationWeeks').get(function () {
+//   return this.duration / 7;
+// });
+
+tourSchema.virtual('reviews', {
+  ref: 'Review',
+  foreignField: 'tour',
+  localField: '_id',
 });
 
 tourSchema.pre('save', function (next) {
@@ -120,16 +126,6 @@ tourSchema.pre('save', function (next) {
 // tourSchema.pre('save', async function (next) {
 //   const guidesPromises = this.guides.map(async (id) => await User.findById(id));
 //   this.guides = await Promise.all(guidesPromises);
-//   next();
-// });
-
-// tourSchema.pre("save", function(next){
-//   console.log('will save');
-//   next()
-// })
-
-// tourSchema.post('save', function (doc, next) {
-//   console.log('doc :>> ', doc);
 //   next();
 // });
 
